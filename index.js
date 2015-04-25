@@ -1,3 +1,5 @@
+/*jslint node:true*/
+
 module.exports = AirWatchService;
 
 var fs = require('fs');
@@ -14,6 +16,18 @@ winston.add(winston.transports.Console, {'timestamp': true, 'colorize': true});
 require('util').inherits(AirWatchService, require('events').EventEmitter);
 
 /**
+ * Returns a filesize in bytes of a file.
+ * @param {String} filename - Path to file.
+ * @returns {Number} bytes - Total file size in bytes.
+ */
+var getFilesizeInBytes = function getFilesizeInBytes(filename) {
+  var stats = fs.statSync(filename);
+  var fileSizeInBytes = stats.size;
+  return fileSizeInBytes;
+};
+
+
+/**
  * Creates an object of the AirWatchService
  * @param {Object} config - Service configurations object
  * @param {String} config.username - AirWatch API Username.
@@ -25,7 +39,7 @@ require('util').inherits(AirWatchService, require('events').EventEmitter);
  * @class
  * @classdesc This is a description of the AirWatchService class.
  */
-function AirWatchService(config) {
+var AirWatchService = function AirWatchService(config) {
   if (!(this instanceof AirWatchService)) {
     return new AirWatchService(config);
   }
@@ -41,16 +55,16 @@ function AirWatchService(config) {
   this.apiVersion = config.apiVersion || 'v1';
   this.path = 'https://' + config.host + '/api/' + this.apiVersion + '/';
   winston.log('info', 'AirWatchService Loaded');
-}
+};
 
 /**
  * Make an request to the AirWatch API
- * @param {string} url - Endpoint to make the request, do not include hostname.
- * @param {object} post - A json object with data to post. Optional.
+ * @param {String} url - Endpoint to make the request, do not include hostname.
+ * @param {Object} post - A json object with data to post. Optional.
  * @param {function} callback - The callback that handles the response.
- * @param {object} callback.error
- * @param {object} callback.response
- * @param {object} callback.body
+ * @param {Object} callback.error
+ * @param {Object} callback.response
+ * @param {Object} callback.body
  */
 AirWatchService.prototype.makeRequest = function (url, post, callback) {
   var self, options;
@@ -79,27 +93,30 @@ AirWatchService.prototype.makeRequest = function (url, post, callback) {
 };
 
 /**
- * Request the current version of an App and update it via semantic versioning. This is currently designed for iOS apps, must have agvtool installed.
+ * Request the current version of an App and update it via semantic versioning. This is currently designed for iOS
+ * apps, must have agvtool installed.
  *
  * @param {Object} options
  * @param {String} options.app - Bundle ID of App.
  * @param {String} [options.status=active] - Status of App.
  * @param {String} [options.release=PATCH] - Type of release.
+ * @param callback
  */
 AirWatchService.prototype.updateVersion = function (options, callback) {
-  var self, newVersion, currentVersion, versionSplit, operate;
+  var self, newVersion, currentVersion, versionSplit, operate, reqUrl;
   self = this;
   if (!options.status) {
     options.status = 'active';
   }
   if (!options.release) {
-    options.release = 'PATCH'
+    options.release = 'PATCH';
   }
-  self.makeRequest('mam/apps/search?bundleid=' + options.app + '&status=' + options.status, null, function (error, request, body) {
-    if (request.statusCode != 200) {
+  reqUrl = 'mam/apps/search?bundleid=' + options.app + '&status=' + options.status;
+  self.makeRequest(reqUrl, null, function (error, request, body) {
+    if (request.statusCode !== 200) {
       return callback(error);
     }
-    currentVersion = body['Application'][0]['ActualFileVersion'];
+    currentVersion = body.Application[0].ActualFileVersion;
     versionSplit = currentVersion.split('.');
     switch (options.release) {
       case ('MAJOR'):
@@ -131,15 +148,15 @@ AirWatchService.prototype.updateVersion = function (options, callback) {
 
 /**
  * Installs an Application on a device
- * @param {object} options
- * @param {string} options.TransactionId -
+ * @param {Object} options
+ * @param {String} options.TransactionId -
  * @param {function} callback
  */
 AirWatchService.prototype.installApp = function (options, callback) {
   var self;
   self = this;
   self.makeRequest('mam/apps/internal/begininstall', options, function (error, response, body) {
-    if (error || response.statusCode != 200) {
+    if (error || response.statusCode !== 200) {
       self.emit('debug', 'Install App Failed ' + (error || response.statusCode));
       return callback(error || new Error(response.statusCode));
     }
@@ -153,11 +170,11 @@ AirWatchService.prototype.installApp = function (options, callback) {
 
 /**
  * Upload an App to the AirWatch API as a single Blob
- * @param {string} filename - Filename of app. Must be in the same directory (for now).
+ * @param {String} filename - Filename of app. Must be in the same directory (for now).
  * @param {function} callback - The callback that handles the response.
- * @param {object} callback.error
- * @param {object} callback.response
- * @param {object} callback.body
+ * @param {Object} callback.error
+ * @param {Object} callback.response
+ * @param {Object} callback.body
  */
 AirWatchService.prototype.uploadAppBlob = function (filename, callback) {
   var self, endpoint, options;
@@ -184,12 +201,13 @@ AirWatchService.prototype.uploadAppBlob = function (filename, callback) {
 
 /**
  * Upload Application Chunks (iOS and Android).
- * Uploads application chunks into the AirWatch database for internal application install. This function must be used prior to the 'Begin Install API' for uploading an internal application.
- * @param {string} filename - Name of the file you want to upload.
- * @param {string} callback - Returns a function with the uploaded transactionId.
+ * Uploads application chunks into the AirWatch database for internal application install. This function must be used
+ * prior to the 'Begin Install API' for uploading an internal application.
+ * @param {String} filename - Name of the file you want to upload.
+ * @param {String} callback - Returns a function with the uploaded transactionId.
  */
 AirWatchService.prototype.uploadAppChunks = function (filename, callback) {
-  var self, chunker, input, totalUploaded, totalAppSize, tmp, endpoint, chunkData, output, transactionId;
+  var self, chunker, input, totalUploaded, totalAppSize, tmp, endpoint, chunkData, output, transactionId, chunkDataSize;
   self = this;
   tmp = './tmp/';
   endpoint = 'mam/apps/internal/uploadchunk';
@@ -205,22 +223,22 @@ AirWatchService.prototype.uploadAppChunks = function (filename, callback) {
   chunker.on('chunkEnd', function (id, done) {
     var fullChunkToUpload = Buffer.concat(chunkData, chunkDataSize);
     var post = {
-      "ChunkData": fullChunkToUpload.toString('base64'),
-      "ChunkSequenceNumber": id + 1,
-      "TotalApplicationSize": totalAppSize,
-      "ChunkSize": fullChunkToUpload.length
+      'ChunkData': fullChunkToUpload.toString('base64'),
+      'ChunkSequenceNumber': id + 1,
+      'TotalApplicationSize': totalAppSize,
+      'ChunkSize': fullChunkToUpload.length
     };
     if (transactionId) {
-      post["TransactionId"] = transactionId;
+      post.TransactionId = transactionId;
     }
     self.makeRequest(endpoint, post, function (error, response, body) {
-      if (!body["UploadSuccess"]) {
+      if (!body.UploadSuccess) {
         self.emit('debug', 'problem ' + (error || response.statusCode));
         return callback(error || new Error(response.statusCode));
       }
-      transactionId = body['TranscationId'];
+      transactionId = body.TranscationId;
       totalUploaded += fullChunkToUpload.length;
-      if (totalUploaded == totalAppSize) {
+      if (totalUploaded === totalAppSize) {
         return callback(null, transactionId);
       }
       done();
@@ -235,9 +253,9 @@ AirWatchService.prototype.uploadAppChunks = function (filename, callback) {
 
 /**
  * Returns an object containing an array of applications installed on the device.
- * @param {object} options - A json object containing items needed to make the request.
- * @param {string} options.deviceId - Type of identification. Can be either 'macaddress', 'serialnumber' or 'UDID'.
- * @param {string} options.uid - Unique ID of the device. Can be either a valid MAC address, serial number or UDID.
+ * @param {Object} options - A json object containing items needed to make the request.
+ * @param {String} options.deviceId - Type of identification. Can be either 'macaddress', 'serialnumber' or 'UDID'.
+ * @param {String} options.uid - Unique ID of the device. Can be either a valid MAC address, serial number or UDID.
  * @param callback
  */
 AirWatchService.prototype.getDeviceApps = function (options, callback) {
@@ -247,9 +265,9 @@ AirWatchService.prototype.getDeviceApps = function (options, callback) {
 
 /**
  * Retrieves details of the device identified by its numeric ID.
- * @param {object} options - A json object containing items needed to make the request.
- * @param {string} options.deviceId - Type of identification. Can be either 'macaddress', 'serialnumber' or 'UDID'.
- * @param {string} options.uid - Unique ID of the device. Can be either a valid MAC address, serial number or UDID.
+ * @param {Object} options - A json object containing items needed to make the request.
+ * @param {String} options.deviceId - Type of identification. Can be either 'macaddress', 'serialnumber' or 'UDID'.
+ * @param {String} options.uid - Unique ID of the device. Can be either a valid MAC address, serial number or UDID.
  * @param {function} callback
  */
 AirWatchService.prototype.getDeviceInfo = function (options, callback) {
@@ -259,9 +277,9 @@ AirWatchService.prototype.getDeviceInfo = function (options, callback) {
 
 /**
  * Retrieves the details of the certificates that are present on the device.
- * @param {object} options - A json object containing items needed to make the request.
- * @param {string} options.deviceId - Type of identification. Can be either 'macaddress', 'serialnumber' or 'UDID'.
- * @param {string} options.uid - Unique ID of the device. Can be either a valid MAC address, serial number or UDID.
+ * @param {Object} options - A json object containing items needed to make the request.
+ * @param {String} options.deviceId - Type of identification. Can be either 'macaddress', 'serialnumber' or 'UDID'.
+ * @param {String} options.uid - Unique ID of the device. Can be either a valid MAC address, serial number or UDID.
  * @param {function} callback
  */
 AirWatchService.prototype.getDeviceCertificates = function (options, callback) {
@@ -271,9 +289,9 @@ AirWatchService.prototype.getDeviceCertificates = function (options, callback) {
 
 /**
  * Retrieves the details of the compliance policies that are present on a device.
- * @param {object} options - A json object containing items needed to make the request.
- * @param {string} options.deviceId - Type of identification. Can be either 'macaddress', 'serialnumber' or 'UDID'.
- * @param {string} options.uid - Unique ID of the device. Can be either a valid MAC address, serial number or UDID.
+ * @param {Object} options - A json object containing items needed to make the request.
+ * @param {String} options.deviceId - Type of identification. Can be either 'macaddress', 'serialnumber' or 'UDID'.
+ * @param {String} options.uid - Unique ID of the device. Can be either a valid MAC address, serial number or UDID.
  * @param {function} callback
  */
 AirWatchService.prototype.getDeviceCompliance = function (options, callback) {
@@ -283,9 +301,9 @@ AirWatchService.prototype.getDeviceCompliance = function (options, callback) {
 
 /**
  * Retrieves the details of the content that is present on a device.
- * @param {object} options - A json object containing items needed to make the request.
- * @param {string} options.deviceId - Type of identification. Can be either 'macaddress', 'serialnumber' or 'UDID'.
- * @param {string} options.uid - Unique ID of the device. Can be either a valid MAC address, serial number or UDID.
+ * @param {Object} options - A json object containing items needed to make the request.
+ * @param {String} options.deviceId - Type of identification. Can be either 'macaddress', 'serialnumber' or 'UDID'.
+ * @param {String} options.uid - Unique ID of the device. Can be either a valid MAC address, serial number or UDID.
  * @param {function} callback
  */
 AirWatchService.prototype.getDeviceContent = function (options, callback) {
@@ -295,9 +313,9 @@ AirWatchService.prototype.getDeviceContent = function (options, callback) {
 
 /**
  * Retrieves the profile related information of the device.
- * @param {object} options - A json object containing items needed to make the request.
- * @param {string} options.deviceId - Type of identification. Can be either 'macaddress', 'serialnumber' or 'UDID'.
- * @param {string} options.uid - Unique ID of the device. Can be either a valid MAC address, serial number or UDID.
+ * @param {Object} options - A json object containing items needed to make the request.
+ * @param {String} options.deviceId - Type of identification. Can be either 'macaddress', 'serialnumber' or 'UDID'.
+ * @param {String} options.uid - Unique ID of the device. Can be either a valid MAC address, serial number or UDID.
  * @param {function} callback
  */
 AirWatchService.prototype.getDeviceProfiles = function (options, callback) {
@@ -307,9 +325,9 @@ AirWatchService.prototype.getDeviceProfiles = function (options, callback) {
 
 /**
  * Retrieves the event log details of the device.
- * @param {object} options - A json object containing items needed to make the request.
- * @param {string} options.deviceId - Type of identification. Can be either 'macaddress', 'serialnumber' or 'UDID'.
- * @param {string} options.uid - Unique ID of the device. Can be either a valid MAC address, serial number or UDID.
+ * @param {Object} options - A json object containing items needed to make the request.
+ * @param {String} options.deviceId - Type of identification. Can be either 'macaddress', 'serialnumber' or 'UDID'.
+ * @param {String} options.uid - Unique ID of the device. Can be either a valid MAC address, serial number or UDID.
  * @param {function} callback
  */
 AirWatchService.prototype.getDeviceEventLog = function (options, callback) {
@@ -319,9 +337,9 @@ AirWatchService.prototype.getDeviceEventLog = function (options, callback) {
 
 /**
  * Make a request to the API for a device specific action.
- * @param {object} options - A json object containing items needed to make the request.
- * @param {string} options.deviceId - Type of identification. Can be either 'macaddress', 'serialnumber' or 'UDID'.
- * @param {string} options.uid - Unique ID of the device. Can be either a valid MAC address, serial number or UDID.
+ * @param {Object} options - A json object containing items needed to make the request.
+ * @param {String} options.deviceId - Type of identification. Can be either 'macaddress', 'serialnumber' or 'UDID'.
+ * @param {String} options.uid - Unique ID of the device. Can be either a valid MAC address, serial number or UDID.
  * @param {function} callback
  * @private
  */
@@ -335,7 +353,7 @@ AirWatchService.prototype._makeDeviceRequest = function (options, action, callba
   suffix = action ? '/' + action : '';
   endpoint = 'mdm/devices/' + options.deviceId + '/' + options.uid + suffix;
   self.makeRequest(endpoint, null, function (error, response, body) {
-    if (error || response.statusCode != 200) {
+    if (error || response.statusCode !== 200) {
       self.emit('debug', 'problem ' + (error || response.statusCode));
       return callback(error || new Error(response.statusCode));
     }
@@ -346,14 +364,3 @@ AirWatchService.prototype._makeDeviceRequest = function (options, action, callba
     callback(null, body);
   });
 };
-
-/**
- * Returns a filesize in bytes of a file.
- * @param filename
- * @returns {number} bytes - Total file size in bytes.
- */
-function getFilesizeInBytes(filename) {
-  var stats = fs.statSync(filename);
-  var fileSizeInBytes = stats["size"];
-  return fileSizeInBytes
-}

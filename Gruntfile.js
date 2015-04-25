@@ -1,4 +1,4 @@
-'use strict';
+
 module.exports = function (grunt) {
   // Show elapsed time at the end
   require('time-grunt')(grunt);
@@ -45,8 +45,8 @@ module.exports = function (grunt) {
         options: {
           systemName: 'Node AirWatch',
           destination: 'docs',
-          template: "node_modules/grunt-jsdoc/node_modules/ink-docstrap/template",
-          configure: "jsdoc.conf.json"
+          template: 'node_modules/grunt-jsdoc/node_modules/ink-docstrap/template',
+          configure: 'jsdoc.conf.json'
         }
       }
     },
@@ -55,8 +55,8 @@ module.exports = function (grunt) {
         options: {
           index: true
         },
-        src: "index.js",
-        dest: "docs.md"
+        src: 'index.js',
+        dest: 'docs.md'
       }
     }
 

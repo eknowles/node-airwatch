@@ -1,8 +1,9 @@
-#  [![Build Status](https://secure.travis-ci.org/eknowles/node-airwatch.png?branch=master)](http://travis-ci.org/eknowles/node-airwatch)
+# node-airwatch
+---
 
-> Node wrapper for the AirWatch REST API
+[![Build Status](https://img.shields.io/travis/eknowles/node-airwatch/master.svg)](http://travis-ci.org/eknowles/node-airwatch) [![Coveralls](https://img.shields.io/coveralls/eknowles/node-airwatch/master.svg)](https://coveralls.io/r/eknowles/node-airwatch?branch=master) [![GitHub Issues](https://img.shields.io/github/issues/eknowles/node-airwatch.svg)](https://github.com/eknowles/node-airwatch/issues)
 
-Built for the BBC Mobile Delivery Team.
+Node wrapper for the AirWatch REST API
 
 # Install
 ```sh

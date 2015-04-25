@@ -1,7 +1,7 @@
 /*global describe, it */
 'use strict';
 var assert = require('assert');
-var awr = require('../');
+var awr = require('../index.js');
 
 describe('awr node module', function () {
     it('must have at least one test', function () {
