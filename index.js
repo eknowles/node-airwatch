@@ -1,4 +1,5 @@
 /*jslint node:true*/
+/*global AirWatchService */
 
 module.exports = AirWatchService;
 
@@ -20,11 +21,11 @@ require('util').inherits(AirWatchService, require('events').EventEmitter);
  * @param {String} filename - Path to file.
  * @returns {Number} bytes - Total file size in bytes.
  */
-var getFilesizeInBytes = function getFilesizeInBytes(filename) {
+function getFilesizeInBytes(filename) {
   var stats = fs.statSync(filename);
   var fileSizeInBytes = stats.size;
   return fileSizeInBytes;
-};
+}
 
 
 /**
@@ -39,7 +40,7 @@ var getFilesizeInBytes = function getFilesizeInBytes(filename) {
  * @class
  * @classdesc This is a description of the AirWatchService class.
  */
-var AirWatchService = function AirWatchService(config) {
+function AirWatchService(config) {
   if (!(this instanceof AirWatchService)) {
     return new AirWatchService(config);
   }
@@ -55,7 +56,7 @@ var AirWatchService = function AirWatchService(config) {
   this.apiVersion = config.apiVersion || 'v1';
   this.path = 'https://' + config.host + '/api/' + this.apiVersion + '/';
   winston.log('info', 'AirWatchService Loaded');
-};
+}
 
 /**
  * Make an request to the AirWatch API
