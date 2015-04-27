@@ -30,11 +30,11 @@ To identify yourself with the AirWatch REST API you need to pass your credential
 
 ```json
     {
-        "username": "myusername", // Your AirWatch Username
-        "password": "mYaIrWaTcHpAsSwOrD", // Your AirWatch Password
-        "groupid": "123", // Group IP
-        "apicode": "1A2BC3DEFGE5OIC87", // Normally passed as the header 'aw-tenant-code'
-        "host": "0.0.0.0" // IP/DNS of the AirWatch Server
+        "username": "myusername",
+        "password": "mYaIrWaTcHpAsSwOrD",
+        "groupid": "123",
+        "apicode": "1A2BC3DEFGE5OIC87",
+        "host": "0.0.0.0"
     }
 ```
 

@@ -1,4 +1,3 @@
-
 module.exports = function (grunt) {
   // Show elapsed time at the end
   require('time-grunt')(grunt);
@@ -58,6 +57,12 @@ module.exports = function (grunt) {
         src: 'index.js',
         dest: 'docs.md'
       }
+    },
+    'gh-pages': {
+      options: {
+        base: 'docs'
+      },
+      src: ['**']
     }
 
   });
